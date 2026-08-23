@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JavaScript Async/Await, Promise.all, Promise.race &amp; new Promise()</title>
+  <style>
+    /* ── Reset & Base ── */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 1100px; margin: 0 auto; }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+    header h1 {
+      font-size: 2.6rem;
+      background: linear-gradient(90deg, #f7971e, #ffd200);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    header p {
+      color: #aaa;
+      font-size: 1.1rem;
+      margin-top: 0.5rem;
+    }
+
+    /* ── Concept Cards ── */
+    .concept-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+      gap: 1.8rem;
+    }
+    .card {
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 20px;
+      padding: 1.8rem 2rem 2rem;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    }
+    .card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.3rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .card h2 .badge {
+      font-size: 0.7rem;
+      background: rgba(255,255,255,0.12);
+      padding: 0.2rem 0.7rem;
+      border-radius: 30px;
+      color: #ccc;
+      font-weight: 400;
+    }
+    .card .desc {
+      color: #b0b0b0;
+      font-size: 0.95rem;
+      margin-bottom: 1.2rem;
+      line-height: 1.5;
+    }
+    .card .code-block {
+      background: #1a1a2e;
+      border-radius: 12px;
+      padding: 1rem 1.2rem;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      overflow-x: auto;
+      white-space: pre;
+      color: #c9d1d9;
+      margin-bottom: 1.2rem;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .code-block .kw   { color: #ff79c6; }  /* keyword */
+    .code-block .str  { color: #f1fa8c; }  /* string */
+    .code-block .fn   { color: #50fa7b; }  /* function */
+    .code-block .cm   { color: #6272a4; }  /* comment */
+    .code-block .num  { color: #bd93f9; }  /* number */
+    .code-block .prop { color: #8be9fd; }  /* property */
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-block;
+      padding: 0.6rem 1.6rem;
+      border: none;
+      border-radius: 40px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #fff;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn-run   { background: linear-gradient(135deg, #f093fb, #f5576c); }
+    .btn-run:hover { box-shadow: 0 4px 20px rgba(245, 87, 108, 0.45); }
+    .btn-clear { background: rgba(255,255,255,0.10); margin-left: 0.6rem; }
+    .btn-clear:hover { background: rgba(255,255,255,0.18); }
+
+    /* ── Output Log ── */
+    .log {
+      background: #0d0d1a;
+      border-radius: 12px;
+      padding: 0.8rem 1rem;
+      min-height: 80px;
+      max-height: 220px;
+      overflow-y: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      border: 1px solid rgba(255,255,255,0.06);
+      margin-top: 0.8rem;
+    }
+    .log .entry {
+      padding: 2px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      animation: fadeSlide 0.3s ease;
+    }
+    .log .entry:last-child { border-bottom: none; }
+    .log .time { color: #6272a4; margin-right: 0.6rem; }
+    .log .ok   { color: #50fa7b; }
+    .log .err  { color: #ff5555; }
+    .log .info { color: #8be9fd; }
+    .log .warn { color: #f1fa8c; }
+
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 540px) {
+      .concept-grid { grid-template-columns: 1fr; }
+      header h1 { font-size: 1.8rem; }
+      .card { padding: 1.2rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>⚡ JavaScript Async Concepts</h1>
+    <p>Interactive demos for <code>new Promise()</code>, <code>async/await</code>, <code>Promise.all</code>, <code>Promise.race</code> &amp; more</p>
+  </header>
+
+  <div class="concept-grid">
+
+    <!-- ──────────────── 1. new Promise() ──────────────── -->
+    <div class="card">
+      <h2>📦 <code>new Promise()</code> <span class="badge">Foundation</span></h2>
+      <p class="desc">
+        A Promise represents a value that may be available <em>now, later, or never</em>.
+        It takes a callback with <strong>resolve</strong> (success) and <strong>reject</strong> (failure).
+      </p>
+      <div class="code-block"><span class="kw">const</span> order = <span class="kw">new</span> Promise(<span class="fn">(resolve, reject)</span> => {
+  setTimeout(<span class="fn">()</span> => {
+    <span class="kw">const</span> ok = Math.random() > <span class="num">0.3</span>;
+    ok ? resolve(<span class="str">"✅ Pizza is ready!"</span>)
+       : reject(<span class="str">"❌ Out of stock"</span>);
+  }, <span class="num">1500</span>);
+});</div>
+      <button class="btn btn-run" onclick="runNewPromise()">▶ Run new Promise()</button>
+      <button class="btn btn-clear" onclick="clearLog('log-promise')">✕ Clear</button>
+      <div id="log-promise" class="log"></div>
+    </div>
+
+    <!-- ──────────────── 2. async / await ──────────────── -->
+    <div class="card">
+      <h2>⏳ <code>async / await</code> <span class="badge">Sugar</span></h2>
+      <p class="desc">
+        <code>async</code> makes a function return a Promise. <code>await</code> pauses execution
+        until the Promise settles — making async code read like synchronous code.
+      </p>
+      <div class="code-block"><span class="kw">async</span> <span class="kw">function</span> <span class="fn">makeCoffee</span>() {
+  console.log(<span class="str">"☕ Brewing..."</span>);
+  <span class="kw">await</span> wait(<span class="num">2000</span>);          <span class="cm">// pause 2s</span>
+  console.log(<span class="str">"✅ Coffee ready!"</span>);
+  <span class="kw">return</span> <span class="str">"☕ Enjoy!"</span>;
+}</div>
+      <button class="btn btn-run" onclick="runAsyncAwait()">▶ Run async/await</button>
+      <button class="btn btn-clear" onclick="clearLog('log-async')">✕ Clear</button>
+      <div id="log-async" class="log"></div>
+    </div>
+
+    <!-- ──────────────── 3. Promise.all ──────────────── -->
+    <div class="card">
+      <h2>🏎️ <code>Promise.all()</code> <span class="badge">Parallel</span></h2>
+      <p class="desc">
+        Runs multiple promises <strong>in parallel</strong>. Resolves when <em>all</em> succeed.
+        If <em>any</em> rejects, the whole thing rejects immediately.
+      </p>
+      <div class="code-block">Promise.<span class="fn">all</span>([ fetchUsers(), fetchOrders(), fetchProducts() ])
+  .<span class="fn">then</span>(<span class="fn">results</span> => {
+    <span class="cm">// All 3 complete → results[0], results[1], results[2]</span>
+  })
+  .<span class="fn">catch</span>(<span class="fn">err</span> => {
+    <span class="cm">// First rejection wins</span>
+  });</div>
+      <button class="btn btn-run" onclick="runPromiseAll()">▶ Run Promise.all()</button>
+      <button class="btn btn-clear" onclick="clearLog('log-all')">✕ Clear</button>
+      <div id="log-all" class="log"></div>
+    </div>
+
+    <!-- ──────────────── 4. Promise.race ──────────────── -->
+    <div class="card">
+      <h2>🥇 <code>Promise.race()</code> <span class="badge">First Wins</span></h2>
+      <p class="desc">
+        Returns as soon as <strong>the first</strong> promise settles (resolve <em>or</em> reject).
+        Great for timeouts — if a task takes too long, the timeout wins.
+      </p>
+      <div class="code-block">Promise.<span class="fn">race</span>([ fetchData(), timeout(<span class="num">3000</span>) ])
+  .<span class="fn">then</span>(<span class="fn">winner</span> => console.log(<span class="str">"First:"</span>, winner))
+  .<span class="fn">catch</span>(<span class="fn">err</span> => console.error(<span class="str">"Timeout!"</span>, err));</div>
+      <button class="btn btn-run" onclick="runPromiseRace()">▶ Run Promise.race()</button>
+      <button class="btn btn-clear" onclick="clearLog('log-race')">✕ Clear</button>
+      <div id="log-race" class="log"></div>
+    </div>
+
+    <!-- ──────────────── 5. Promise.allSettled ──────────────── -->
+    <div class="card">
+      <h2>📋 <code>Promise.allSettled()</code> <span class="badge">All Results</span></h2>
+      <p class="desc">
+        Waits for <em>all</em> promises to settle (resolve <strong>or</strong> reject).
+        Never short-circuits — you get every result, good or bad.
+      </p>
+      <div class="code-block">Promise.<span class="fn">allSettled</span>([ goodPromise, badPromise ])
+  .<span class="fn">then</span>(<span class="fn">results</span> => {
+    results.<span class="fn">forEach</span>(<span class="fn">r</span> => {
+      <span class="cm">// r.status === "fulfilled" | "rejected"</span>
+    });
+  });</div>
+      <button class="btn btn-run" onclick="runAllSettled()">▶ Run allSettled()</button>
+      <button class="btn btn-clear" onclick="clearLog('log-settled')">✕ Clear</button>
+      <div id="log-settled" class="log"></div>
+    </div>
+
+    <!-- ──────────────── 6. Promise.any ──────────────── -->
+    <div class="card">
+      <h2>🎯 <code>Promise.any()</code> <span class="badge">First Success</span></h2>
+      <p class="desc">
+        Resolves when <strong>any</strong> promise resolves (first success wins).
+        Ignores rejections unless <em>all</em> reject.
+      </p>
+      <div class="code-block">Promise.<span class="fn">any</span>([ slowOK(), fastFail(), mediumOK() ])
+  .<span class="fn">then</span>(<span class="fn">winner</span> => console.log(<span class="str">"First success:"</span>, winner))
+  .<span class="fn">catch</span>(<span class="fn">err</span> => console.error(<span class="str">"All rejected"</span>, err));</div>
+      <button class="btn btn-run" onclick="runPromiseAny()">▶ Run Promise.any()</button>
+      <button class="btn btn-clear" onclick="clearLog('log-any')">✕ Clear</button>
+      <div id="log-any" class="log"></div>
+    </div>
+
+    <!-- ──────────────── 7. Error Handling ──────────────── -->
+    <div class="card">
+      <h2>🛡️ <code>try/catch</code> <span class="badge">Error Handling</span></h2>
+      <p class="desc">
+        With <code>async/await</code>, use <code>try/catch/finally</code> to handle
+        errors gracefully — just like synchronous code.
+      </p>
+      <div class="code-block"><span class="kw">async</span> <span class="kw">function</span> <span class="fn">safeFetch</span>() {
+  <span class="kw">try</span> {
+    <span class="kw">const</span> data = <span class="kw">await</span> riskyAPI();
+    console.log(<span class="str">"✅ Data:"</span>, data);
+  } <span class="kw">catch</span> (err) {
+    console.error(<span class="str">"❌"</span>, err.message);
+  } <span class="kw">finally</span> {
+    console.log(<span class="str">"🏁 Done"</span>);
+  }
+}</div>
+      <button class="btn btn-run" onclick="runErrorHandling()">▶ Run try/catch</button>
+      <button class="btn btn-clear" onclick="clearLog('log-error')">✕ Clear</button>
+      <div id="log-error" class="log"></div>
+    </div>
+
+    <!-- ──────────────── 8. Real-world Dashboard ──────────────── -->
+    <div class="card">
+      <h2>🚀 <code>Real Dashboard</code> <span class="badge">Combined</span></h2>
+      <p class="desc">
+        A realistic e-commerce dashboard using <strong>Promise.all</strong> to fetch
+        orders, users, and inventory in parallel, with <strong>async/await</strong>.
+      </p>
+      <div class="code-block"><span class="kw">async</span> <span class="kw">function</span> <span class="fn">loadDashboard</span>() {
+  <span class="kw">const</span> [orders, users, stock] = <span class="kw">await</span> Promise.<span class="fn">all</span>([
+    fetchOrders(), fetchUsers(), fetchStock()
+  ]);
+  renderDashboard({ orders, users, stock });
+}</div>
+      <button class="btn btn-run" onclick="runDashboard()">▶ Run Dashboard</button>
+      <button class="btn btn-clear" onclick="clearLog('log-dash')">✕ Clear</button>
+      <div id="log-dash" class="log"></div>
+    </div>
+
+  </div><!-- /.concept-grid -->
+</div><!-- /.container -->
+
+<script>
+  // ──────────────────────────────────────────────
+  //  Helper: log to a specific log container
+  // ──────────────────────────────────────────────
+  function logTo(containerId, text, type = 'info') {
+    const log = document.getElementById(containerId);
+    if (!log) return;
+    const entry = document.createElement('div');
+    entry.className = 'entry';
+    const now = new Date();
+    const ts = now.toLocaleTimeString('en-US', { hour12: false });
+    entry.innerHTML = `<span class="time">[${ts}]</span><span class="${type}">${text}</span>`;
+    log.appendChild(entry);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function clearLog(containerId) {
+    const log = document.getElementById(containerId);
+    if (log) log.innerHTML = '';
+  }
+
+  // Helper: promise that resolves after ms
+  function wait(ms, label) {
+    return new Promise(resolve => {
+      setTimeout(() => resolve(label || ms), ms);
+    });
+  }
+
+  // Helper: promise that rejects after ms
+  function failAfter(ms, label) {
+    return new Promise((_, reject) => {
+      setTimeout(() => reject(new Error(label || `Failed after ${ms}ms`)), ms);
+    });
+  }
+
+  // ──────────────────────────────────────────────
+  //  1. new Promise()
+  // ──────────────────────────────────────────────
+  function runNewPromise() {
+    const logId = 'log-promise';
+    logTo(logId, '🚀 Creating a new Promise...', 'info');
+
+    const order = new Promise((resolve, reject) => {
+      logTo(logId, '   ⏳ Cooking pizza... (1.5s)', 'warn');
+      setTimeout(() => {
+        const ok = Math.random() > 0.3;
+        if (ok) {
+          resolve('✅ Pizza is ready! 🍕');
+        } else {
+          reject('❌ Sorry, out of stock!');
+        }
+      }, 1500);
+    });
+
+    order
+      .then(msg => logTo(logId, msg, 'ok'))
+      .catch(err => logTo(logId, err, 'err'))
+      .finally(() => logTo(logId, '🏁 Promise settled (finally)', 'info'));
+  }
+
+  // ──────────────────────────────────────────────
+  //  2. async / await
+  // ──────────────────────────────────────────────
+  async function runAsyncAwait() {
+    const logId = 'log-async';
+    logTo(logId, '🚀 Starting async/await demo...', 'info');
+
+    function brewCoffee() {
+      return new Promise(resolve => {
+        logTo(logId, '   ☕ Brewing coffee... (2s)', 'warn');
+        setTimeout(() => resolve('☕ Coffee is ready!'), 2000);
+      });
+    }
+
+    const result = await brewCoffee();
+    logTo(logId, result, 'ok');
+    logTo(logId, '🏁 async function complete', 'info');
+  }
+
+  // ──────────────────────────────────────────────
+  //  3. Promise.all()
+  // ──────────────────────────────────────────────
+  function runPromiseAll() {
+    const logId = 'log-all';
+    logTo(logId, '🚀 Promise.all() — fetching 3 APIs in parallel...', 'info');
+
+    const fetchUsers   = wait(2000, '✅ Users fetched  (2.0s)');
+    const fetchOrders  = wait(1500, '✅ Orders fetched (1.5s)');
+    const fetchProducts = wait(2500, '✅ Products fetched (2.5s)');
+
+    logTo(logId, '   ⏳ All 3 requests started simultaneously...', 'warn');
+
+    Promise.all([fetchUsers, fetchOrders, fetchProducts])
+      .then(results => {
+        results.forEach(r => logTo(logId, r, 'ok'));
+        logTo(logId, '🎉 All promises resolved!', 'ok');
+      })
+      .catch(err => logTo(logId, `❌ ${err.message}`, 'err'));
+  }
+
+  // ──────────────────────────────────────────────
+  //  4. Promise.race()
+  // ──────────────────────────────────────────────
+  function runPromiseRace() {
+    const logId = 'log-race';
+    logTo(logId, '🚀 Promise.race() — fastest wins!', 'info');
+
+    const slow  = wait(3000, '🐢 Slow (3.0s)');
+    const medium = wait(2000, '🐇 Medium (2.0s)');
+    const fast  = wait(1000, '⚡ Fast (1.0s)');
+
+    logTo(logId, '   ⏳ Racing 3 promises...', 'warn');
+
+    Promise.race([slow, medium, fast])
+      .then(winner => logTo(logId, `🏆 Winner: ${winner}`, 'ok'))
+      .catch(err => logTo(logId, `❌ ${err.message}`, 'err'));
+
+    // Also show a timeout example
+    setTimeout(() => {
+      logTo(logId, '─── Timeout example ───', 'info');
+      const dataPromise = wait(3000, '✅ Data loaded');
+      const timeoutPromise = failAfter(1500, '⏰ Request timed out!');
+
+      Promise.race([dataPromise, timeoutPromise])
+        .then(r => logTo(logId, r, 'ok'))
+        .catch(err => logTo(logId, `❌ ${err.message}`, 'err'));
+    }, 3500);
+  }
+
+  // ──────────────────────────────────────────────
+  //  5. Promise.allSettled()
+  // ──────────────────────────────────────────────
+  function runAllSettled() {
+    const logId = 'log-settled';
+    logTo(logId, '🚀 Promise.allSettled() — wait for all outcomes...', 'info');
+
+    const good = wait(1500, '✅ Task A succeeded');
+    const bad  = failAfter(1000, '❌ Task B failed');
+    const slow = wait(2500, '✅ Task C succeeded (slow)');
+
+    logTo(logId, '   ⏳ Running 3 tasks (some may fail)...', 'warn');
+
+    Promise.allSettled([good, bad, slow])
+      .then(results => {
+        results.forEach((r, i) => {
+          if (r.status === 'fulfilled') {
+            logTo(logId, `📌 Task ${String.fromCharCode(65 + i)}: ${r.value}`, 'ok');
+          } else {
+            logTo(logId, `📌 Task ${String.fromCharCode(65 + i)}: ${r.reason.message}`, 'err');
+          }
+        });
+        logTo(logId, '🎉 allSettled() complete — no short-circuit!', 'ok');
+      });
+  }
+
+  // ──────────────────────────────────────────────
+  //  6. Promise.any()
+  // ──────────────────────────────────────────────
+  function runPromiseAny() {
+    const logId = 'log-any';
+    logTo(logId, '🚀 Promise.any() — first SUCCESS wins...', 'info');
+
+    const fastFail  = failAfter(500,  '❌ Fast fail (0.5s)');
+    const slowOK    = wait(3000, '✅ Slow success (3.0s)');
+    const mediumOK  = wait(1800, '✅ Medium success (1.8s)');
+
+    logTo(logId, '   ⏳ Starting — fast fail will be ignored...', 'warn');
+
+    Promise.any([fastFail, slowOK, mediumOK])
+      .then(winner => logTo(logId, `🏆 First success: ${winner}`, 'ok'))
+      .catch(err => logTo(logId, `❌ All rejected: ${err.message}`, 'err'));
+  }
+
+  // ──────────────────────────────────────────────
+  //  7. Error Handling (try/catch/finally)
+  // ──────────────────────────────────────────────
+  async function runErrorHandling() {
+    const logId = 'log-error';
+    logTo(logId, '🚀 try/catch/finally demo...', 'info');
+
+    function riskyOperation(shouldFail) {
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          shouldFail
+            ? reject(new Error('💥 Something went wrong!'))
+            : resolve('✅ Operation succeeded!');
+        }, 1200);
+      });
+    }
+
+    // First — success case
+    logTo(logId, '─── Success case ───', 'info');
+    try {
+      logTo(logId, '   ⏳ Running risky operation...', 'warn');
+      const result = await riskyOperation(false);
+      logTo(logId, result, 'ok');
+    } catch (err) {
+      logTo(logId, `❌ ${err.message}`, 'err');
+    } finally {
+      logTo(logId, '🏁 finally block always runs', 'info');
+    }
+
+    // Second — failure case
+    logTo(logId, '─── Failure case ───', 'info');
+    try {
+      logTo(logId, '   ⏳ Running risky operation...', 'warn');
+      const result = await riskyOperation(true);
+      logTo(logId, result, 'ok');
+    } catch (err) {
+      logTo(logId, `❌ ${err.message}`, 'err');
+    } finally {
+      logTo(logId, '🏁 finally block always runs', 'info');
+    }
+  }
+
+  // ──────────────────────────────────────────────
+  //  8. Real-world Dashboard (Combined)
+  // ──────────────────────────────────────────────
+  async function runDashboard() {
+    const logId = 'log-dash';
+    logTo(logId, '🚀 Loading e-commerce dashboard...', 'info');
+
+    function fetchOrders() {
+      return new Promise(resolve => {
+        const delay = Math.floor(Math.random() * 2000) + 1000;
+        logTo(logId, `   📦 Fetching orders... (${(delay/1000).toFixed(1)}s)`, 'warn');
+        setTimeout(() => resolve(`✅ ${Math.floor(Math.random() * 20 + 5)} orders loaded`), delay);
+      });
+    }
+
+    function fetchUsers() {
+      return new Promise(resolve => {
+        const delay = Math.floor(Math.random() * 2000) + 1000;
+        logTo(logId, `   👤 Fetching users... (${(delay/1000).toFixed(1)}s)`, 'warn');
+        setTimeout(() => resolve(`✅ ${Math.floor(Math.random() * 50 + 10)} users loaded`), delay);
+      });
+    }
+
+    function fetchInventory() {
+      return new Promise(resolve => {
+        const delay = Math.floor(Math.random() * 2000) + 1000;
+        logTo(logId, `   📊 Fetching inventory... (${(delay/1000).toFixed(1)}s)`, 'warn');
+        setTimeout(() => resolve(`✅ ${Math.floor(Math.random() * 100 + 50)} stock items loaded`), delay);
+      });
+    }
+
+    try {
+      logTo(logId, '   ⏳ Running all 3 in parallel via Promise.all...', 'warn');
+      const [orders, users, inventory] = await Promise.all([
+        fetchOrders(),
+        fetchUsers(),
+        fetchInventory()
+      ]);
+
+      logTo(logId, '─── Dashboard Results ───', 'info');
+      logTo(logId, orders, 'ok');
+      logTo(logId, users, 'ok');
+      logTo(logId, inventory, 'ok');
+      logTo(logId, '🎉 Dashboard loaded successfully!', 'ok');
+    } catch (err) {
+      logTo(logId, `❌ Dashboard failed: ${err.message}`, 'err');
+    }
+  }
+</script>
+</body>
+</html>

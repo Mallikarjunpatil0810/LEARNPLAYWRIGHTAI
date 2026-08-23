@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Shell(npm:*)",
+      "Shell(dir:*)",
+      "Shell(cd /d C:\\Automation\\salesforce-playwright-framework && mkdir node_modules\\@playwright 2>nul & curl -sL -o pw-core.tgz https://registry.npmjs.org/playwright-core/-/playwright-core-1.62.1.tgz && tar -xzf pw-core.tgz -C node_modules && ren node_modules\\package playwright-core && curl -sL -o pw.tgz https://registry.npmjs.org/playwright/-/playwright-1.62.1.tgz && tar -xzf pw.tgz -C node_modules && ren node_modules\\package playwright && curl -sL -o pwt.tgz https://registry.npmjs.org/@playwright/test/-/test-1.62.1.tgz && tar -xzf pwt.tgz -C node_modules\\@playwright && ren node_modules\\@playwright\\package test && dir node_modules && echo === && dir node_modules\\@playwright)",
+      "Shell(node -e console.log(require('@playwright/test/package.json').version))",
+      "Shell(npx playwright test tests/invalid-login.spec.js --project=chromium)",
+      "Shell(node node_modules@playwrighttestcli.js test tests/invalid-login.spec.js --project=chromium)",
+      "Shell(node node_modules@playwrighttestcli.js test tests/valid-login.spec.js --project=chromium)",
+      "Shell(node node_modules@playwrighttestcli.js test --project=chromium --project=firefox --project=webkit 2 >& 1)",
+      "Shell(node node_modules@playwrighttestcli.js install firefox webkit)",
+      "Shell(node node_modules@playwrighttestcli.js test 2 >& 1)",
+      "Shell(cd /d \"C:\\Users\\Mallikarjun\\OneDrive\\文件\\LearnPlaywrigthAI\\salesforce-playwright-framework\" && mkdir node_modules\\@playwright 2>nul & mklink /J node_modules\\@playwright\\test \"C:\\Automation\\salesforce-playwright-framework\\node_modules\\@playwright\\test\" && mklink /J node_modules\\playwright \"C:\\Automation\\salesforce-playwright-framework\\node_modules\\playwright\" && mklink /J node_modules\\playwright-core \"C:\\Automation\\salesforce-playwright-framework\\node_modules\\playwright-core\" && mklink /J node_modules\\dotenv \"C:\\Automation\\salesforce-playwright-framework\\node_modules\\dotenv\")",
+      "Shell(copy:*)",
+      "Shell(cd /d \"C:\\Users\\Mallikarjun\\OneDrive\\文件\\LearnPlaywrigthAI\\salesforce-playwright-framework\" && rmdir /s /q playwright-report 2>nul & rmdir /s /q test-results 2>nul & echo cleaned)"
+    ],
+    "deny": [],
+    "defaultMode": "default"
+  }
+}

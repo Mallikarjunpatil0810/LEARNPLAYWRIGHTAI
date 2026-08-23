@@ -1,0 +1,18 @@
+{
+  "name": "salesforce-playwright-framework",
+  "version": "1.0.0",
+  "description": "Enterprise-grade Playwright + JavaScript test framework for the Salesforce login page",
+  "private": true,
+  "scripts": {
+    "test": "node C:/Automation/salesforce-playwright-framework/node_modules/@playwright/test/cli.js test",
+    "test:valid": "node C:/Automation/salesforce-playwright-framework/node_modules/@playwright/test/cli.js test tests/valid-login.spec.js",
+    "test:invalid": "node C:/Automation/salesforce-playwright-framework/node_modules/@playwright/test/cli.js test tests/invalid-login.spec.js",
+    "test:headed": "node C:/Automation/salesforce-playwright-framework/node_modules/@playwright/test/cli.js test --headed",
+    "test:chromium": "node C:/Automation/salesforce-playwright-framework/node_modules/@playwright/test/cli.js test --project=chromium",
+    "report": "node C:/Automation/salesforce-playwright-framework/node_modules/@playwright/test/cli.js show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.45.0",
+    "dotenv": "^16.4.5"
+  }
+}
